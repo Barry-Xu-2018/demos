@@ -14,6 +14,7 @@
 
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <utility>
 
@@ -23,6 +24,7 @@
 
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "my_example_msgs/msg/test_data1_m.hpp"
 
 #include "demo_nodes_cpp/visibility_control.h"
 
@@ -58,20 +60,32 @@ public:
         count_++;
         // We loan a message here and don't allocate the memory on the stack.
         // For middlewares which support message loaning, this means the middleware
-        // completely owns the memory for this message.
+        // completely owns the memory for this message.std::array<unsigned char, 1048576>
         // This enables a zero-copy message transport for middlewares with shared memory
         // capabilities.
         // If the middleware doesn't support this, the loaned message will be allocated
         // with the allocator instance provided by the publisher.
         auto pod_loaned_msg = pod_pub_->borrow_loaned_message();
+#if 0
         auto pod_msg_data = static_cast<double>(count_);
         pod_loaned_msg.get().data = pod_msg_data;
         RCLCPP_INFO(this->get_logger(), "Publishing: '%f'", pod_msg_data);
         // As the middleware might own the memory allocated for this message,
         // a call to publish explicitly transfers ownership back to the middleware.
         // The loaned message instance is thus no longer valid after a call to publish.
+#else
+        std::array<unsigned char, 1048576> data;
+        data[0] = count_%255;        
+        pod_loaned_msg.get().test_data = data;
+        RCLCPP_INFO(
+          this->get_logger(),
+          "Publishing: ['%d'] %p",
+          static_cast<int>(pod_loaned_msg.get().test_data[0]),
+          static_cast<void *>(&(pod_loaned_msg.get().test_data)));
+#endif
         pod_pub_->publish(std::move(pod_loaned_msg));
 
+#if 0
         // Similar as in the above case, we ask the middleware to laon a message.
         // As most likely the middleware won't be able to loan a message for a non-POD
         // data type, the memory for the message will be allocated on the heap within
@@ -82,12 +96,14 @@ public:
         non_pod_loaned_msg.get().data = non_pod_msg_data;
         RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", non_pod_msg_data.c_str());
         non_pod_pub_->publish(std::move(non_pod_loaned_msg));
+#endif
       };
 
     // Create a publisher with a custom Quality of Service profile.
     rclcpp::QoS qos(rclcpp::KeepLast(7));
-    pod_pub_ = this->create_publisher<std_msgs::msg::Float64>("chatter_pod", qos);
-    non_pod_pub_ = this->create_publisher<std_msgs::msg::String>("chatter", qos);
+    //pod_pub_ = this->create_publisher<std_msgs::msg::Float64>("chatter_pod", qos);
+    //non_pod_pub_ = this->create_publisher<std_msgs::msg::String>("chatter", qos);
+    pod_pub_ = this->create_publisher<my_example_msgs::msg::TestData1M>("chatter_pod", qos);
 
     // Use a timer to schedule periodic message publishing.
     timer_ = this->create_wall_timer(1s, publish_message);
@@ -95,8 +111,9 @@ public:
 
 private:
   size_t count_ = 1;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pod_pub_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr non_pod_pub_;
+  //rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pod_pub_;
+  //rclcpp::Publisher<std_msgs::msg::String>::SharedPtr non_pod_pub_;
+  rclcpp::Publisher<my_example_msgs::msg::TestData1M>::SharedPtr pod_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
