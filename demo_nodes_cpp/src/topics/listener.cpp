@@ -37,7 +37,7 @@ public:
     auto callback =
       [this](const std_msgs::msg::Float64::SharedPtr msg) -> void
       {
-        RCLCPP_INFO(this->get_logger(), "I heard: [%f]", msg->data);
+        RCLCPP_INFO(this->get_logger(), "I heard: [%f], %p", msg->data, &msg->data);
       };
     // Create a subscription to the topic which can be matched with one or more compatible ROS
     // publishers.
