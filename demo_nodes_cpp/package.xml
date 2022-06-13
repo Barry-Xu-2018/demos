@@ -25,6 +25,8 @@
   <build_depend>rmw_implementation_cmake</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>rosidl_runtime_cpp</build_depend>
+  <build_depend>rosidl_typesupport_introspection_cpp</build_depend>
 
   <exec_depend>example_interfaces</exec_depend>
   <exec_depend>launch_ros</exec_depend>
@@ -35,6 +37,8 @@
   <exec_depend>rmw</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>rosidl_runtime_cpp</exec_depend>
+  <exec_depend>rosidl_typesupport_introspection_cpp</exec_depend>
 
   <test_depend>ament_cmake_pytest</test_depend>
   <test_depend>ament_lint_auto</test_depend>
