@@ -86,7 +86,7 @@ namespace demo_nodes_cpp
           msg->intensities.size());
 
         isShowed = true;
-        scan_member(members_, static_cast<void *>(msg.get()), 0);
+        scan_member(members_, static_cast<void *>(msg.get()));
       };
       // Create a subscription to the topic which can be matched with one or more compatible ROS
       // publishers.
@@ -102,7 +102,7 @@ namespace demo_nodes_cpp
           sensor_msgs::msg::LaserScan>();
     }
 
-    void scan_member(const rosidl_typesupport_introspection_cpp::MessageMembers *members, void *msg, uint32_t offset)
+    void scan_member(const rosidl_typesupport_introspection_cpp::MessageMembers *members, void *msg)
     {
       uint64_t addr = reinterpret_cast<uint64_t>(msg);
       for (uint32_t i = 0; i < members->member_count_; ++i)
@@ -125,14 +125,14 @@ namespace demo_nodes_cpp
         case ::rosidl_typesupport_introspection_cpp::ROS_TYPE_FLOAT32:
           {
             if (member->is_array_) {
-              auto float_array = reinterpret_cast<std_msgs::msg::Float32MultiArray::_data_type *>(addr + offset + member->offset_);
+              auto float_array = reinterpret_cast<std_msgs::msg::Float32MultiArray::_data_type *>(addr + member->offset_);
               if (float_array->size()) {
                 RCLCPP_INFO(this->get_logger(), "%s: FLOAT32 array, %zu, [0]=%f", member->name_, float_array->size(), (*float_array)[0]);
               } else {
                 RCLCPP_INFO(this->get_logger(), "%s: FLOAT32 array, %zu", member->name_, float_array->size());
               }
             } else {
-              RCLCPP_INFO(this->get_logger(), "%s: FLOAT32, %f", member->name_, *reinterpret_cast<std_msgs::msg::Float32::_data_type *>(addr + offset + member->offset_));
+              RCLCPP_INFO(this->get_logger(), "%s: FLOAT32, %f", member->name_, *reinterpret_cast<std_msgs::msg::Float32::_data_type *>(addr + member->offset_));
             }
           }
           break;
@@ -147,12 +147,12 @@ namespace demo_nodes_cpp
           break;
         case ::rosidl_typesupport_introspection_cpp::ROS_TYPE_INT32:
           {
-            RCLCPP_INFO(this->get_logger(), "%s: INT32, %d", member->name_, *reinterpret_cast<std_msgs::msg::Int32::_data_type *>(addr + offset + member->offset_));
+            RCLCPP_INFO(this->get_logger(), "%s: INT32, %d", member->name_, *reinterpret_cast<std_msgs::msg::Int32::_data_type *>(addr + member->offset_));
           }
           break;
         case ::rosidl_typesupport_introspection_cpp::ROS_TYPE_UINT32:
           {
-            RCLCPP_INFO(this->get_logger(), "%s: UINT32, %u", member->name_, *reinterpret_cast<std_msgs::msg::UInt32::_data_type *>(addr + offset + member->offset_));
+            RCLCPP_INFO(this->get_logger(), "%s: UINT32, %u", member->name_, *reinterpret_cast<std_msgs::msg::UInt32::_data_type *>(addr + member->offset_));
           }
           break;
         case ::rosidl_typesupport_introspection_cpp::ROS_TYPE_INT64:
@@ -163,7 +163,7 @@ namespace demo_nodes_cpp
           break;
         case ::rosidl_typesupport_introspection_cpp::ROS_TYPE_STRING:
           {
-            auto string = reinterpret_cast<std_msgs::msg::String::_data_type *>(addr + offset + member->offset_);
+            auto string = reinterpret_cast<std_msgs::msg::String::_data_type *>(addr + member->offset_);
             RCLCPP_INFO(this->get_logger(), "%s: STRING, %s (len:%zu)", member->name_, string->c_str(), sizeof(*string));
           }
           break;
@@ -176,7 +176,7 @@ namespace demo_nodes_cpp
           auto sub_members = (const rosidl_typesupport_introspection_cpp::MessageMembers *)member->members_->data;
           if (!member->is_array_)
           {
-            scan_member(sub_members, msg, offset + member->offset_);
+            scan_member(sub_members, (void *)(addr + member->offset_));
           }
           else
           {
@@ -188,11 +188,7 @@ namespace demo_nodes_cpp
             }
             else
             {
-              RCLCPP_INFO(this->get_logger(),
-                "%d: member->array_size_: %ld, member->is_upper_bound: %s",
-                i + 1,
-                member->array_size_,
-                member->is_upper_bound_?"true":"false");
+              array_size = member->size_function((void *)(addr + member->offset_));
             }
 
             if (array_size != 0 && !member->get_function)
@@ -202,7 +198,7 @@ namespace demo_nodes_cpp
             }
             for (size_t index = 0; index < array_size; ++index)
             {
-              scan_member(sub_members, msg, offset + member->offset_);
+              scan_member(sub_members, member->get_function((void *)(addr + member->offset_), index));
             }
           }
         }
