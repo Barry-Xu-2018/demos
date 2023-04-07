@@ -43,6 +43,7 @@ setup(
             'async_param_client = demo_nodes_py.parameters.async_param_client:main',
             'set_parameters_callback = demo_nodes_py.parameters.set_parameters_callback:main',
             'introspection = demo_nodes_py.services.introspection:main',
+            'use_logger_service = demo_nodes_py.logging.use_logger_service:main'
         ],
     },
 )

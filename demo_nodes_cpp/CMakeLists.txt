@@ -57,7 +57,7 @@ custom_executable(parameters parameter_event_handler)
 custom_executable(parameters set_and_get_parameters_async)
 
 # Tutorials of logger service
-custom_executable(loggers use_logger_service)
+custom_executable(logging use_logger_service)
 
 add_library(timers_library SHARED
   src/timers/one_off_timer.cpp
