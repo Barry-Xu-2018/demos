@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy
 import threading
 import time
 
+from rcl_interfaces.msg import LoggerLevel
+from rcl_interfaces.srv import GetLoggerLevels
+from rcl_interfaces.srv import SetLoggerLevels
+import rclpy
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.logging_severity import LoggingSeverity
 from rclpy.node import Node
 from std_msgs.msg import String
-from rcl_interfaces.msg import LoggerLevel
-from rcl_interfaces.srv import GetLoggerLevels
-from rcl_interfaces.srv import SetLoggerLevels
 
 
 class LoggerServiceNode(Node):
@@ -68,7 +68,7 @@ class TestNode(Node):
             return False
 
         return ret_results.results[0].successful
-    
+
     def get_logger_level_on_remote_node(self):
         if not self._logger_get_client.service_is_ready():
             return [False, None]
@@ -81,8 +81,8 @@ class TestNode(Node):
 
         ret_results = future.result()
         if not ret_results:
-            return [False, None]      
-        
+            return [False, None]
+
         return [True, ret_results.levels[0].level]
 
 
@@ -107,7 +107,7 @@ def main(args=None):
     msg.data = 'Output 1'
     test_node.pub.publish(msg)
     time.sleep(0.5)
-  
+
     # Output with debug logger level
     test_node.get_logger().info('Output with debug logger level:')
     if test_node.set_logger_level_on_remote_node(LoggingSeverity.DEBUG):
@@ -137,7 +137,7 @@ def main(args=None):
         time.sleep(0.5)
     else:
         test_node.get_logger().error('Failed to set debug logger level via logger service !')
-    
+
     # Should get error logger level (40)
     ret, level = test_node.get_logger_level_on_remote_node()
     if ret:
@@ -153,4 +153,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
