@@ -26,11 +26,11 @@
 namespace demo_nodes_cpp
 {
 
-class ServerNode final : public rclcpp::Node
+class LongServerNode final : public rclcpp::Node
 {
 public:
   DEMO_NODES_CPP_PUBLIC
-  explicit ServerNode(const rclcpp::NodeOptions & options)
+  explicit LongServerNode(const rclcpp::NodeOptions & options)
   : Node("add_two_ints_server", options)
   {
     auto handle_add_two_ints = [this](
@@ -42,7 +42,7 @@ public:
         RCLCPP_INFO(
           this->get_logger(), "Incoming request\na: %" PRId64 " b: %" PRId64,
           request->a, request->b);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         response->sum = request->a + request->b;
 
         saw_request_ = true;
@@ -70,4 +70,4 @@ private:
 
 }  // namespace demo_nodes_cpp
 
-RCLCPP_COMPONENTS_REGISTER_NODE(demo_nodes_cpp::ServerNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(demo_nodes_cpp::LongServerNode)

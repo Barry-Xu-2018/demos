@@ -132,6 +132,9 @@ create_demo_library("demo_nodes_cpp::SetParametersCallback" set_parameters_callb
 create_demo_library("demo_nodes_cpp::ServerNode" add_two_ints_server
   FILES src/services/add_two_ints_server.cpp
   DEPENDENCIES ${example_interfaces_TARGETS} rclcpp::rclcpp rclcpp_components::component)
+create_demo_library("demo_nodes_cpp::LongServerNode" add_two_ints_server_long
+  FILES src/services/add_two_ints_server_long.cpp
+  DEPENDENCIES ${example_interfaces_TARGETS} rclcpp::rclcpp rclcpp_components::component)
 create_demo_library("demo_nodes_cpp::ClientNode" add_two_ints_client_async
   FILES src/services/add_two_ints_client_async.cpp
   DEPENDENCIES ${example_interfaces_TARGETS} rclcpp::rclcpp rclcpp_components::component)
