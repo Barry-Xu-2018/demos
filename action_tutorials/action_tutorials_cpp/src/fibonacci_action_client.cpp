@@ -109,6 +109,16 @@ public:
     this->timer_ = this->create_wall_timer(
       std::chrono::milliseconds(500),
       [this]() {return this->send_goal();});
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    // Create a new thread to wait 3 seconds and then cancel the goal
+    std::thread([this]() {
+      std::this_thread::sleep_for(std::chrono::seconds(3));
+      if (this->goal_handle_) {
+        this->client_ptr_->async_cancel_goal(this->goal_handle_);
+      }
+    }).detach();
   }
 
   ACTION_TUTORIALS_CPP_PUBLIC
@@ -136,6 +146,7 @@ public:
         if (!goal_handle) {
           RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
         } else {
+          this->goal_handle_ = goal_handle;
           RCLCPP_INFO(this->get_logger(), "Goal accepted by server, waiting for result");
         }
       };
@@ -163,6 +174,7 @@ public:
             return;
           case rclcpp_action::ResultCode::CANCELED:
             RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+            rclcpp::shutdown();
             return;
           default:
             RCLCPP_ERROR(this->get_logger(), "Unknown result code");
@@ -187,6 +199,7 @@ private:
     on_set_parameters_callback_handle_;
   rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr
     post_set_parameters_callback_handle_;
+  GoalHandleFibonacci::SharedPtr goal_handle_;
 };  // class FibonacciActionClient
 
 }  // namespace action_tutorials_cpp
