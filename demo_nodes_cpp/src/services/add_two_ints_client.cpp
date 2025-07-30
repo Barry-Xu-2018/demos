@@ -47,27 +47,31 @@ int main(int argc, char ** argv)
 
   auto node = rclcpp::Node::make_shared("add_two_ints_client");
 
-  auto client = node->create_client<example_interfaces::srv::AddTwoInts>("add_two_ints");
+  while(rclcpp::ok()) {
+    auto client = node->create_client<example_interfaces::srv::AddTwoInts>("add_two_ints");
 
-  auto request = std::make_shared<example_interfaces::srv::AddTwoInts::Request>();
-  request->a = 2;
-  request->b = 3;
+    auto request = std::make_shared<example_interfaces::srv::AddTwoInts::Request>();
+    request->a = 2;
+    request->b = 3;
 
-  while (!client->wait_for_service(1s)) {
-    if (!rclcpp::ok()) {
-      RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");
-      return 0;
+    while (!client->wait_for_service(1s)) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");
+        return 0;
+      }
+      RCLCPP_INFO(node->get_logger(), "service not available, waiting again...");
     }
-    RCLCPP_INFO(node->get_logger(), "service not available, waiting again...");
-  }
 
-  // TODO(wjwwood): make it like `client->send_request(node, request)->sum`
-  // TODO(wjwwood): consider error condition
-  auto result = send_request(node, client, request);
-  if (result) {
-    RCLCPP_INFO_STREAM(node->get_logger(), "Result of add_two_ints: " << result->sum);
-  } else {
-    RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for response. Exiting.");
+    // TODO(wjwwood): make it like `client->send_request(node, request)->sum`
+    // TODO(wjwwood): consider error condition
+    auto result = send_request(node, client, request);
+    if (result) {
+      RCLCPP_INFO_STREAM(node->get_logger(), "Result of add_two_ints: " << result->sum);
+    } else {
+      RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for response. Exiting.");
+    }
+    client.reset();
+    //rclcpp::sleep_for(500ms);
   }
 
   rclcpp::shutdown();

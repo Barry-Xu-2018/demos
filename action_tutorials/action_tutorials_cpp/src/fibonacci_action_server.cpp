@@ -55,7 +55,7 @@ private:
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Fibonacci::Goal> goal)
   {
-    RCLCPP_INFO(this->get_logger(), "Received goal request with order %d", goal->order);
+    RCLCPP_INFO(this->get_logger(), "Received goal request with order %d : %s", goal->order, rclcpp_action::to_string(uuid).c_str());
     (void)uuid;
     // Let's reject sequences that are over 9000
     if (goal->order > 9000) {
@@ -113,8 +113,8 @@ private:
     // Check if goal is done
     if (rclcpp::ok()) {
       result->sequence = sequence;
+      RCLCPP_INFO(this->get_logger(), "Goal succeeded %s", rclcpp_action::to_string(goal_handle->get_goal_id()).c_str());
       goal_handle->succeed(result);
-      RCLCPP_INFO(this->get_logger(), "Goal succeeded");
     }
   }
 };  // class FibonacciActionServer

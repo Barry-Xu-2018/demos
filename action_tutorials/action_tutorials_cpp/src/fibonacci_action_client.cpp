@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <sstream>
@@ -53,7 +54,20 @@ public:
   {
     using namespace std::placeholders;
 
-    this->timer_->cancel();
+    if (!can_send_goal_) {
+      return;
+    }
+    //this->timer_->cancel();
+    can_send_goal_ = false;
+
+    this->client_ptr_.reset();
+    this->client_ptr_ = rclcpp_action::create_client<Fibonacci>(
+      this->get_node_base_interface(),
+      this->get_node_graph_interface(),
+      this->get_node_logging_interface(),
+      this->get_node_waitables_interface(),
+      "fibonacci");
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     if (!this->client_ptr_->wait_for_action_server(std::chrono::seconds(10))) {
       RCLCPP_ERROR(this->get_logger(), "Action server not available after waiting");
@@ -62,7 +76,9 @@ public:
     }
 
     auto goal_msg = Fibonacci::Goal();
-    goal_msg.order = 10;
+
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    goal_msg.order = std::rand() % (8) + 3;
 
     RCLCPP_INFO(this->get_logger(), "Sending goal");
 
@@ -125,8 +141,11 @@ private:
       ss << number << " ";
     }
     RCLCPP_INFO(this->get_logger(), "%s", ss.str().c_str());
-    rclcpp::shutdown();
+    can_send_goal_ = true;
+    //rclcpp::shutdown();
   }
+
+  std::atomic_bool can_send_goal_{true};
 };  // class FibonacciActionClient
 
 }  // namespace action_tutorials_cpp
