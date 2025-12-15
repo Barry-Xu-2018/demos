@@ -24,6 +24,8 @@
 
 #include "action_tutorials_cpp/visibility_control.h"
 
+#include "action_msgs/srv/cancel_goal.hpp"
+
 namespace action_tutorials_cpp
 {
 class FibonacciActionClient : public rclcpp::Node
@@ -46,6 +48,40 @@ public:
     this->timer_ = this->create_wall_timer(
       std::chrono::milliseconds(500),
       std::bind(&FibonacciActionClient::send_goal, this));
+
+    // Create a timer to check if the action server is available
+    this->server_check_timer_ = this->create_wall_timer(
+      std::chrono::seconds(13),
+      [this]() {
+        if (this->client_ptr_->wait_for_action_server(std::chrono::seconds(0))) {
+          if (in_progress_) {
+            RCLCPP_WARN(
+              this->get_logger(),
+              "Action server is available again, incomplete action will be cancelled.");
+            in_progress_ = false;
+            auto future_cancel = this->client_ptr_->async_cancel_all_goals();
+            // Create a thread to wait for the cancel to complete
+            std::thread(
+              [this, future_cancel]() {
+                try {
+                  auto cancel_response = future_cancel.get();
+                  RCLCPP_INFO(
+                    this->get_logger(),
+                    "Retrun code %d cancelled %zu goals.", cancel_response->return_code,
+                    cancel_response->return_code == action_msgs::srv::CancelGoal::Response::ERROR_NONE ?
+                    cancel_response->goals_canceling.size() : 0);
+                } catch (const std::exception & e) {
+                  RCLCPP_ERROR(this->get_logger(), "Failed to cancel goals: %s", e.what());
+                }
+                RCLCPP_WARN(this->get_logger(), "Send goal again");
+                this->send_goal();
+              }).detach();
+          }
+        } else {
+          RCLCPP_WARN(this->get_logger(), "Action server is unavailable");
+        }
+      });
+    this->server_check_timer_->cancel();  // Start with the timer canceled
   }
 
   ACTION_TUTORIALS_CPP_PUBLIC
@@ -79,6 +115,8 @@ public:
 private:
   rclcpp_action::Client<Fibonacci>::SharedPtr client_ptr_;
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr server_check_timer_;
+  std::atomic_bool in_progress_{false};
 
   ACTION_TUTORIALS_CPP_LOCAL
   void goal_response_callback(GoalHandleFibonacci::SharedPtr goal_handle)
@@ -87,6 +125,9 @@ private:
       RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
     } else {
       RCLCPP_INFO(this->get_logger(), "Goal accepted by server, waiting for result");
+      in_progress_ = true;
+      server_check_timer_->reset();  // Reset the timer to start checking client is blocked since
+                                     // action server is broken.
     }
   }
 
@@ -125,6 +166,7 @@ private:
       ss << number << " ";
     }
     RCLCPP_INFO(this->get_logger(), "%s", ss.str().c_str());
+    in_progress_ = false;
     rclcpp::shutdown();
   }
 };  // class FibonacciActionClient
