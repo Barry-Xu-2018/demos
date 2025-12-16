@@ -79,9 +79,29 @@ public:
           }
         } else {
           RCLCPP_WARN(this->get_logger(), "Action server is unavailable");
+          // Continuously check until the server is back
+          this->server_available_timer_->reset();
+          this->check_available_count_ = 0;
         }
       });
     this->server_check_timer_->cancel();  // Start with the timer canceled
+
+    // Repeat checking until the action server is available
+    this->server_available_timer_ = this->create_wall_timer(
+      std::chrono::seconds(1),
+      [this]() {
+        if (this->client_ptr_->wait_for_action_server(std::chrono::seconds(0))) {
+          this->server_available_timer_->cancel();
+          ++this->check_available_count_;
+          RCLCPP_INFO(this->get_logger(), "Action server is now available after %u s",
+            this->check_available_count_.load());
+          RCLCPP_WARN(this->get_logger(), "Send goal again");
+          this->send_goal();
+        } else {
+          ++this->check_available_count_;
+        }
+      });
+    this->server_available_timer_->cancel();  // Start with the timer canceled
   }
 
   ACTION_TUTORIALS_CPP_PUBLIC
@@ -116,7 +136,9 @@ private:
   rclcpp_action::Client<Fibonacci>::SharedPtr client_ptr_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr server_check_timer_;
+  rclcpp::TimerBase::SharedPtr server_available_timer_;
   std::atomic_bool in_progress_{false};
+  std::atomic_uint check_available_count_{0};
 
   ACTION_TUTORIALS_CPP_LOCAL
   void goal_response_callback(GoalHandleFibonacci::SharedPtr goal_handle)
@@ -152,12 +174,18 @@ private:
         break;
       case rclcpp_action::ResultCode::ABORTED:
         RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+        in_progress_ = false;
+        send_goal();
         return;
       case rclcpp_action::ResultCode::CANCELED:
         RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+        in_progress_ = false;
+        send_goal();
         return;
       default:
         RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+        in_progress_ = false;
+        send_goal();
         return;
     }
     std::stringstream ss;
